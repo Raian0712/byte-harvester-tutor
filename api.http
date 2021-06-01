@@ -1,0 +1,29 @@
+GET http://localhost:3000
+
+###
+
+GET http://localhost:3000/users
+
+###
+
+GET http://localhost:3000/users/60b21d1676676d2eb802ae47
+
+###
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+    "name": "Test",
+    "accountType": "Student"
+}
+
+###
+DELETE http://localhost:3000/users/60b21d1676676d2eb802ae47
+
+###
+PATCH http://localhost:3000/users/60b22082422f381414720c5e
+Content-Type: application/json
+
+{
+    "name": "New Test Name"
+}
