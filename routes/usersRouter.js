@@ -41,10 +41,16 @@ router.post('/register', async (req, res) => {
 //Login
 router.post('/login', async (req, res) => {
     try {
-        await User.findOne({ username: req.body.username }, function (err, user) {
+        console.log(req.body)
+        await User.findOne({ name: req.body.name }, function (err, user) {
+            if (!user) {
+                return res.status(200).json({
+                    message: "User not found"
+                });
+            } 
             if (!user.validPassword(req.body.password)) {
                 //password didn't match
-                res.json({
+                res.status(200).json({
                     message: "Invalid password."
                 });
 
@@ -77,6 +83,21 @@ router.patch('/:id', getUser, async (req, res) => {
         res.json(updatedUser)
     } catch (err) {
         res.status(400).json({
+            message: err.message
+        })
+    }
+})
+
+// TODO: student submit their codes (this can accept json format now)
+router.post('/submit', async (req, res) => {
+    try {
+        if (req.body)
+        {
+            console.log(req.body)
+            res.status(200).json("Request accepted.")
+        }
+    } catch (err) {
+        res.status(500).json({
             message: err.message
         })
     }
