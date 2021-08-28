@@ -14,8 +14,21 @@ Content-Type: application/json
 
 {
     "name": "Test",
+    "email": "test@test.com",
     "password": "12345",
     "accountType": "Student"
+}
+
+###
+
+POST http://localhost:3000/users/register
+Content-Type: application/json
+
+{
+    "name": "Test2",
+    "email": "test2@test.com",
+    "password": "12345",
+    "accountType": "Tutor"
 }
 
 ###
@@ -23,12 +36,34 @@ POST http://localhost:3000/users/login
 Content-Type: application/json
 
 {
-    "name": "Test",
+    "email": "test@test.com",
     "password": "12345"
 }
 
 ###
-DELETE http://localhost:3000/users/60b22082422f381414720c5e
+
+POST http://localhost:3000/users/submit
+Content-Type: application/json
+
+{
+    "email": "test@test.com",
+    "solutions": {
+        "levelID": "0-0",
+        "code": "move A1 30\\nmove B1 30",
+        "attempts": 1,
+        "stepsTaken": 15,
+        "timeTaken": 20,
+        "codeErrors": [{
+            "id": 0,
+            "type": "test",
+            "message": "Test error",
+            "lineOfError": 2
+        }]
+    }
+}
+
+###
+DELETE http://localhost:3000/users/612910873714ca54bcdaf5e5
 
 ###
 PATCH http://localhost:3000/users/60b22082422f381414720c5e
