@@ -11,8 +11,7 @@ const userSchema = new mongoose.Schema({
         required: true
     },
     password: {
-        type: String,
-        required: true
+        type: String
     },
     accountType: {
         type: String,
@@ -22,12 +21,18 @@ const userSchema = new mongoose.Schema({
         type: Date,
         required: true,
         default: Date.now
+    },
+    v: {
+        type: String
+    },
+    hash: {
+        type: String
     }
 })
 
 //Method to hash password
-userSchema.methods.generateHash = function (password) {
-    return bcrypt.hashSync(password, bcrypt.genSaltSync(8), null);
+userSchema.methods.generateHash = function (password, salt) {
+    return bcrypt.hashSync(password, salt/*bcrypt.genSaltSync(8)*/, null);
 }
 
 //Method to check if password is valid

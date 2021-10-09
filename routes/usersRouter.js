@@ -2,8 +2,12 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
 const Token = require("../models/token");
+const Secret = require('../models/secret');
 const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
+const hash = crypto.createHash('sha256');
+const csprng = require('csprng');
+
 
 // Getting all
 router.get('/', async (req, res) => {
@@ -22,30 +26,35 @@ router.get('/:id', getUser, (req, res) => {
     res.send(res.user)
 })
 
-//Creating One & register
-router.post('/register', async (req, res) => {
-    let user;
-    if (req.body.accountType == 'Tutor') {
-        user = new User.user({
-            name: req.body.name,
-            email: req.body.email,
-            accountType: req.body.accountType,
+router.post('/secretUpdate', async (req, res) => {
+    try {
+        let secret = new Secret({
+            secret: csprng(128)
         })
-    } else {
-        user = new User.student({
-            name: req.body.name,
-            email: req.body.email,
-            accountType: req.body.accountType,
-            solutions: {
-                levelID: "0-0"
-            }
+        await secret.save();
+        res.status(201).json({
+            message: "Secret updated."
+        })
+    } catch (err) {
+        res.status(500).json({
+            message: err.message
         })
     }
+})
 
+//Creating One & register
+router.post('/register', async (req, res) => {
     try {
-        user.password = user.generateHash(req.body.password);
-        const newUser = await user.save()
-        res.status(201).json(newUser)
+        await User.user.findOne({ email: req.body.email }, async function (err, user) {
+            user.password = req.body.password;//user.generateHash(req.body.password, user.name + 'byteharvesterdev' + user.v);
+            const hash = crypto.createHash('sha256');
+            hash.update(user.password);  //SHA256 with base64 strings
+            user.hash = hash.digest('base64');
+            user.password = user.hash;
+
+            const newUser = await user.save();
+            res.status(201).json(newUser);
+        })
     } catch (err) {
         //400 = bad data
         res.status(400).json({
@@ -54,17 +63,89 @@ router.post('/register', async (req, res) => {
     }
 })
 
+router.post('/registerLookup', async (req, res) => {
+    try {
+        await User.user.findOne({ email: req.body.email }, async function (err, user) {
+            let salt = '';
+            let v = csprng(128);
+            if (!user) {
+                let newUser;
+                if (req.body.accountType == 'Tutor') {
+                    newUser = new User.user({
+                        name: req.body.name,
+                        email: req.body.email,
+                        accountType: req.body.accountType,
+                        v: v //128 bits CSPRNG
+                    })
+                } else {
+                    newUser = new User.student({
+                        name: req.body.name,
+                        email: req.body.email,
+                        accountType: req.body.accountType,
+                        solutions: {
+                            levelID: "0-0"
+                        },
+                        v: v
+                    })
+                }
+
+                await newUser.save();
+
+                salt = req.body.name + 'byteharvesterdev' + newUser.v;
+                const hash = crypto.createHash('sha256').update(salt).digest('base64');
+                salt = hash.substr(0, 22);
+            }
+
+            res.status(200).json({
+                message: 'Register lookup complete',
+                salt: salt
+            })
+        })
+    } catch (err) {
+        res.status(400).json({
+            message: err
+        })
+    }
+})
+
+router.post('/userLookup', async (req, res) => {
+    try {
+        await User.user.findOne({ email: req.body.email }, function (err, user) {
+            let salt = '';
+            if (user) {
+                salt = user.name + 'byteharvesterdev' + user.v;
+            } else {
+                salt = req.body.name + 'byteharvesterdev' + secret.secret;
+            }
+
+            const hash = crypto.createHash('sha256').update(salt).digest('base64');
+            salt = hash.substr(0, 22);
+
+            res.status(200).json({
+                message: 'Lookup complete',
+                salt: salt
+            })
+        })
+    } catch (err) {
+        res.status(400).json({
+            message: err
+        })
+    }
+})
+
 //Login
 router.post('/login', async (req, res) => {
     try {
-        console.log(req.body)
+        //console.log(req.body)
         await User.user.findOne({ email: req.body.email }, function (err, user) {
+            let calculatedHash = crypto.createHash('sha256').update(req.body.password).digest('base64');
+            
             if (!user) {
                 return res.status(200).json({
                     message: "User not found"
                 });
-            } 
-            if (!user.validPassword(req.body.password)) {
+            }
+            if (calculatedHash != user.hash) {
                 //password didn't match
                 res.status(200).json({
                     message: "Invalid password."
@@ -73,7 +154,8 @@ router.post('/login', async (req, res) => {
             } else {
                 //password match, proceeds to login
                 res.json({
-                    message: "You're now logged in!"
+                    message: "You're now logged in!",
+                    token: 'test123'
                 });
             }
                 

@@ -72,3 +72,9 @@ Content-Type: application/json
 {
     "name": "New Test Name"
 }
+
+###
+GET http://byte-harvester-server.herokuapp.com:80/
+###
+GET http://byte-harvester-server.herokuapp.com:80/users
+###
