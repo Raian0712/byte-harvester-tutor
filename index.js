@@ -19,7 +19,9 @@ db.once('open', () => console.log("Connected to Database"));
 
 //Router for users
 const usersRouter = require('./routes/usersRouter');
+const assessRouter = require('./routes/assessRouter');
 app.use('/users', usersRouter);
+app.use('/assess', assessRouter);
 
 //Simple GET request
 app.get('/', (req, res) => {
