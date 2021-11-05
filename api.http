@@ -41,6 +41,30 @@ Content-Type: application/json
 }
 
 ###
+POST http://localhost:3000/users/passwordReset
+Content-Type: application/json
+
+{
+    "email": "lim071@hotmail.com"
+}
+
+###
+POST http://localhost:3000/assess/submit
+Content-Type: application/json
+
+{
+    "studentEmail": "test@test.com",
+    "tutorEmail": "testTutor@test.com",
+    "levelID": "0-0",
+    "marks": {
+        "amountOfTime": "8",
+        "efficiency": "8",
+        "correctness": "8",
+        "attemptsTaken": "8"
+    }
+}
+
+###
 
 POST http://localhost:3000/users/submit
 Content-Type: application/json

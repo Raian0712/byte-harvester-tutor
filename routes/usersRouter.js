@@ -1,4 +1,5 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 const User = require('../models/user');
 const Token = require("../models/token");
@@ -52,8 +53,10 @@ router.post('/register', async (req, res) => {
             user.hash = hash.digest('base64');
             user.password = user.hash;
 
-            const newUser = await user.save();
-            res.status(201).json(newUser);
+            await user.save();
+            res.status(201).json({
+                message: "User registered successfully."
+            });
         })
     } catch (err) {
         //400 = bad data
@@ -109,6 +112,7 @@ router.post('/registerLookup', async (req, res) => {
 })
 
 router.post('/userLookup', async (req, res) => {
+    console.log(req.body)
     try {
         await User.user.findOne({ email: req.body.email }, function (err, user) {
             let salt = '';
@@ -136,7 +140,7 @@ router.post('/userLookup', async (req, res) => {
 //Login
 router.post('/login', async (req, res) => {
     try {
-        //console.log(req.body)
+        console.log(req.body)
         await User.user.findOne({ email: req.body.email }, function (err, user) {
             let calculatedHash = crypto.createHash('sha256').update(req.body.password).digest('base64');
             
@@ -153,9 +157,11 @@ router.post('/login', async (req, res) => {
 
             } else {
                 //password match, proceeds to login
+                let token = jwt.sign({ email: req.body.email }, "byteharvester", { expiresIn: 60 * 30 });  //expires in 30 minutes
+
                 res.json({
                     message: "You're now logged in!",
-                    token: 'test123'
+                    token: token
                 });
             }
                 
@@ -167,10 +173,30 @@ router.post('/login', async (req, res) => {
     }
 })
 
-//TODO: send reset password email https://dev.to/jahangeer/how-to-implement-password-reset-via-email-in-node-js-132m
-/*router.post('/passwordReset', async (req, res) => {
+router.post('/validatePasswordResetToken', async (req, res) => {
     try {
-        const user = await User.findOne({ email: req.body.email })
+        console.log(req.body)
+        let token = await Token.findOne({ token: req.body.token });
+        console.log(token)
+        if (token) {
+            res.status(200).json({
+                message: "Your password reset token is valid."
+            })
+        }
+        res.status(200).json({
+            message: "Your password reset token is not found or expired."
+        })
+    } catch (error) {
+        res.status(500).json({
+            message: "An error occured."
+        })
+    }
+})
+
+//TODO: configure GET route for front-end https://dev.to/jahangeer/how-to-implement-password-reset-via-email-in-node-js-132m
+router.post('/passwordReset', async (req, res) => {
+    try {
+        const user = await User.user.findOne({ email: req.body.email })
         if (!user) {
             return res.status(400).json({
                 message: "User with given email address doesn't exist."
@@ -183,9 +209,11 @@ router.post('/login', async (req, res) => {
                 userId: user._id,
                 token: crypto.randomBytes(20).toString('hex')
             })
+
+            await token.save();
         }
 
-        const token = `${process.env.BASE_URL}/passwordReset/${user._id}/${token.token}`
+        const link = `http://localhost:3000/passwordReset/${user._id}/${token.token}`
         await sendEmail(user.email, "Password reset", link);
 
         res.status(200).json({
@@ -215,6 +243,18 @@ router.post('/passwordReset/:userId/:token', async (req, res) => {
             return res.status(400).send("Invalid link or expired");
         }
 
+        //Password reset part
+        let v = csprng(128);
+        user.v = v;
+        let salt = user.name + 'byteharvesterdev' + v;
+        const hash = crypto.createHash('sha256').update(salt).digest('base64');
+        salt = hash.substr(0, 22);
+        await user.save();
+
+        res.status(200).json({
+            salt: salt
+        })
+
 
     } catch (error) {
         res.status(500).json({
@@ -222,7 +262,100 @@ router.post('/passwordReset/:userId/:token', async (req, res) => {
         })
         console.log(error);
     }
-})*/
+})
+
+router.post('/passwordReset/:userId/:token/2', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.userId);
+        if (!user) {
+            return res.status(400).send("invalid link or expired");
+        }
+
+        const token = await Token.findOne({
+            userId: user._id,
+            token: req.params.token,
+        });
+        if (!token) {
+            return res.status(400).send("Invalid link or expired");
+        }
+
+        user.password = req.body.password;//user.generateHash(req.body.password, user.name + 'byteharvesterdev' + user.v);
+        const hash = crypto.createHash('sha256');
+        hash.update(user.password);  //SHA256 with base64 strings
+        user.hash = hash.digest('base64');
+        user.password = user.hash;
+
+        await user.save();
+        res.status(200).json({
+            message: "Password changed successfully."
+        });
+        
+
+
+    } catch (error) {
+        res.status(500).json({
+            message: "An error occured."
+        })
+        console.log(error);
+    }
+})
+
+router.get('/getTutors', async (req, res) => {
+    try {
+        let list = await User.user.find({ accountType: "Tutor" });
+        if (!list) {
+            res.status(200).json({
+                message: 'No tutors found in the database.'
+            });
+        }
+
+        res.status(200).json({
+            tutors: list
+        })
+    } catch (error) {
+        res.status(500).json({
+            message: "An error occured."
+        });
+    }
+})
+
+router.get('/getStudents', async (req, res) => {
+    try {
+        let list = await User.user.find({ accountType: "Student", tutorName: req.tutorName });
+        if (!list) {
+            res.status(200).json({
+                message: 'No students found in the database.'
+            });
+        }
+
+        res.status(200).json({
+            tutors: list
+        })
+    } catch (error) {
+        res.status(500).json({
+            message: "An error occured."
+        });
+    }
+})
+
+router.post('/getUserType', async (req, res) => {
+    try {
+        let user = await User.user.findOne({ email: req.body.email });
+        if (!user) {
+            res.status(200).json({
+                message: 'User not found.'
+            });
+        }
+
+        res.status(200).json({
+            userType: user.accountType
+        })
+    } catch (error) {
+        res.status(500).json({
+            message: "An error occured."
+        });
+    }
+})
 
 //Updating One
 router.patch('/:id', getUser, async (req, res) => {

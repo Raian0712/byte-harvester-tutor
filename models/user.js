@@ -43,6 +43,14 @@ userSchema.methods.validPassword = function (password) {
 const user = mongoose.model('User', userSchema);
 
 const student = user.discriminator('Student', new mongoose.Schema({
+    programme: {
+        type: String,
+        default: '-'
+    },
+    group: {
+        type: Number,
+        default: 1
+    },
     progress: {
         type: String,
         required: false,
