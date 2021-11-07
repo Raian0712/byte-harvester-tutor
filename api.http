@@ -6,6 +6,10 @@ GET http://localhost:3000/users
 
 ###
 
+POST http://localhost:3000/users/secretUpdate
+
+###
+
 GET http://localhost:3000/users/60b21d1676676d2eb802ae47
 
 ###

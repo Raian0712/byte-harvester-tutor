@@ -28,17 +28,6 @@ router.post('/getSubmission', async (req, res) => {
 })
 
 //TODO: submit assessment marks
-/*body: {
-    studentEmail
-    tutorEmail
-    levelID
-    marks: {
-        amountOfTime,
-        efficiency,
-        correctness,
-        attemptsTaken
-    }
-}*/
 router.post('/submit', async (req, res) => {
     try {
         await User.student.findOne({ email: req.body.studentEmail }, async (err, user) => {
@@ -81,18 +70,35 @@ router.post('/submit', async (req, res) => {
 }*/
 router.post('/getAll', async (req, res) => {
     try {
-        await User.user.findOne({ email: req.body.email }, async (err, user) => {
-            //return all marks
-            let list = await User.student.find({ tutorName: user.tutorName });
-            if (!list) {
-                console.log('No student found with tutor name');
-                res.status(200).json({message: 'No student found with tutor name'})
-            } 
+        //return all marks
+        let list = await User.student.find({ tutorEmail: req.body.email });
+        if (!list) {
+            console.log('No student found with tutor name');
+            return res.status(200).json({message: 'No student found with tutor name'})
+        } 
 
-            console.log(list);
+        console.log(list);
 
-            res.status(200).json({message: 'Successfully retrived all submissions.', students: list})
-        })
+        res.status(200).json({message: 'Successfully retrived all submissions.', students: list})
+        
+    } catch (error) {
+        res.status(400).json({message: error})
+    }
+})
+
+router.post('/getAllSubmissionsStudent', async (req, res) => {
+    try {
+        //return all marks
+        let list = await User.student.findOne({ email: req.body.email });
+        if (!list) {
+            console.log('No student found with tutor name');
+            return res.status(200).json({message: 'No student found with email'})
+        } 
+
+        console.log(list);
+
+        res.status(200).json({message: 'Successfully retrived all submissions.', students: list})
+        
     } catch (error) {
         res.status(400).json({message: error})
     }

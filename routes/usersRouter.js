@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
@@ -8,7 +9,7 @@ const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
 const hash = crypto.createHash('sha256');
 const csprng = require('csprng');
-
+const mongoose = require('mongoose');
 
 // Getting all
 router.get('/', async (req, res) => {
@@ -20,11 +21,6 @@ router.get('/', async (req, res) => {
             message: err.message
         })
     }
-})
-
-//Getting One
-router.get('/:id', getUser, (req, res) => {
-    res.send(res.user)
 })
 
 router.post('/secretUpdate', async (req, res) => {
@@ -52,6 +48,9 @@ router.post('/register', async (req, res) => {
             hash.update(user.password);  //SHA256 with base64 strings
             user.hash = hash.digest('base64');
             user.password = user.hash;
+            user.programme = req.body.programme;
+            user.group = req.body.group;
+            user.tutorName = req.body.tutorName;
 
             await user.save();
             res.status(201).json({
@@ -119,7 +118,7 @@ router.post('/userLookup', async (req, res) => {
             if (user) {
                 salt = user.name + 'byteharvesterdev' + user.v;
             } else {
-                salt = req.body.name + 'byteharvesterdev' + secret.secret;
+                salt = req.body.name + 'byteharvesterdev' + Secret.secret;
             }
 
             const hash = crypto.createHash('sha256').update(salt).digest('base64');
@@ -175,19 +174,17 @@ router.post('/login', async (req, res) => {
 
 router.post('/validatePasswordResetToken', async (req, res) => {
     try {
-        console.log(req.body)
         let token = await Token.findOne({ token: req.body.token });
-        console.log(token)
         if (token) {
-            res.status(200).json({
+            return res.status(200).json({
                 message: "Your password reset token is valid."
             })
         }
-        res.status(200).json({
+        return res.status(200).json({
             message: "Your password reset token is not found or expired."
         })
     } catch (error) {
-        res.status(500).json({
+        return res.status(500).json({
             message: "An error occured."
         })
     }
@@ -213,7 +210,7 @@ router.post('/passwordReset', async (req, res) => {
             await token.save();
         }
 
-        const link = `http://localhost:3000/passwordReset/${user._id}/${token.token}`
+        const link = `http://${process.env.WEBSITE_URL}/passwordReset/${user._id}/${token.token}`
         await sendEmail(user.email, "Password reset", link);
 
         res.status(200).json({
@@ -230,7 +227,7 @@ router.post('/passwordReset', async (req, res) => {
 
 router.post('/passwordReset/:userId/:token', async (req, res) => {
     try {
-        const user = await User.findById(req.params.userId);
+        const user = await User.user.findById(mongoose.Types.ObjectId(req.params.userId));
         if (!user) {
             return res.status(400).send("invalid link or expired");
         }
@@ -244,6 +241,7 @@ router.post('/passwordReset/:userId/:token', async (req, res) => {
         }
 
         //Password reset part
+        console.log(token)
         let v = csprng(128);
         user.v = v;
         let salt = user.name + 'byteharvesterdev' + v;
@@ -251,25 +249,28 @@ router.post('/passwordReset/:userId/:token', async (req, res) => {
         salt = hash.substr(0, 22);
         await user.save();
 
-        res.status(200).json({
+        return res.status(200).json({
             salt: salt
         })
 
 
     } catch (error) {
-        res.status(500).json({
+        console.log(error);
+        return res.status(500).json({
             message: "An error occured."
         })
-        console.log(error);
+        
     }
 })
 
 router.post('/passwordReset/:userId/:token/2', async (req, res) => {
     try {
-        const user = await User.findById(req.params.userId);
+        const user = await User.user.findById(mongoose.Types.ObjectId(req.params.userId));
         if (!user) {
             return res.status(400).send("invalid link or expired");
         }
+
+        console.log(user);
 
         const token = await Token.findOne({
             userId: user._id,
@@ -286,7 +287,7 @@ router.post('/passwordReset/:userId/:token/2', async (req, res) => {
         user.password = user.hash;
 
         await user.save();
-        res.status(200).json({
+        return res.status(200).json({
             message: "Password changed successfully."
         });
         
@@ -300,11 +301,12 @@ router.post('/passwordReset/:userId/:token/2', async (req, res) => {
     }
 })
 
-router.get('/getTutors', async (req, res) => {
+router.post('/getTutors', async (req, res) => {
     try {
         let list = await User.user.find({ accountType: "Tutor" });
+        console.log(list);
         if (!list) {
-            res.status(200).json({
+            return res.status(200).json({
                 message: 'No tutors found in the database.'
             });
         }
@@ -323,7 +325,7 @@ router.get('/getStudents', async (req, res) => {
     try {
         let list = await User.user.find({ accountType: "Student", tutorName: req.tutorName });
         if (!list) {
-            res.status(200).json({
+            return res.status(200).json({
                 message: 'No students found in the database.'
             });
         }
@@ -342,37 +344,40 @@ router.post('/getUserType', async (req, res) => {
     try {
         let user = await User.user.findOne({ email: req.body.email });
         if (!user) {
+            return res.status(200).json({
+                message: 'User not found.'
+            });
+        }
+
+        return res.status(200).json({
+            userType: user.accountType
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: "An error occured."
+        });
+    }
+})
+
+// /getProfile gets the profile of the user
+// body: { email: string} 
+router.post('/getProfile', async (req, res) => {
+    try {
+        let user = await User.user.findOne({ email: req.body.email });
+        if (!user) {
             res.status(200).json({
                 message: 'User not found.'
             });
         }
 
         res.status(200).json({
-            userType: user.accountType
+            user: user
         })
-    } catch (error) {
+    }
+    catch (error) {
         res.status(500).json({
             message: "An error occured."
         });
-    }
-})
-
-//Updating One
-router.patch('/:id', getUser, async (req, res) => {
-    if (req.body.name != null) {
-        res.user.name = req.body.name
-    }
-    if (req.body.accountType != null) {
-        res.user.accountType = req.body.accountType
-    }
-
-    try {
-        const updatedUser = await res.user.save()
-        res.json(updatedUser)
-    } catch (err) {
-        res.status(400).json({
-            message: err.message
-        })
     }
 })
 
@@ -405,20 +410,6 @@ router.post('/submit', async (req, res) => {
                 message: 'Successfully submitted your solution.'
             })
         }
-    } catch (err) {
-        res.status(500).json({
-            message: err.message
-        })
-    }
-})
-
-//Deleting One
-router.delete('/:id', getUser, async (req, res) => {
-    try {
-        await res.user.remove()
-        res.json({
-            message: "Deleted user"
-        })
     } catch (err) {
         res.status(500).json({
             message: err.message

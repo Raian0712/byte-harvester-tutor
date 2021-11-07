@@ -59,7 +59,7 @@ const student = user.discriminator('Student', new mongoose.Schema({
     solutions: [{
         levelID: {
             type: String,
-            default: '0-0'
+            default: ''
         },
         code: {
             type: String,
@@ -118,6 +118,10 @@ const student = user.discriminator('Student', new mongoose.Schema({
         type: String,
         default: ''
     },
+    tutorEmail: {
+        type: String,
+        default: ''
+    }
 }))
 
 module.exports = {
