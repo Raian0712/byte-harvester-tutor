@@ -384,6 +384,7 @@ router.post('/getProfile', async (req, res) => {
 router.post('/submit', async (req, res) => {
     let insertIntoArray = true;
     try {
+        console.log(req.body);
         if (req.body) {
             const user = await User.student.findOne({ email: req.body.email })
             user.solutions.forEach(solution => {
@@ -412,7 +413,6 @@ router.post('/submit', async (req, res) => {
             })
         }
     } catch (err) {
-        console.log(err.message);
         res.status(500).json({
             message: err.message
         })
