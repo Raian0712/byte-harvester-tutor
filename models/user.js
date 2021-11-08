@@ -51,13 +51,12 @@ const student = user.discriminator('Student', new mongoose.Schema({
         type: Number,
         default: 1
     },
-    progress: {
-        type: String,
-        required: false,
-        default: '0-0'
-    },
     solutions: [{
         levelID: {
+            type: String,
+            default: ''
+        },
+        tagsList: {
             type: String,
             default: ''
         },
@@ -76,6 +75,10 @@ const student = user.discriminator('Student', new mongoose.Schema({
         timeTaken: {
             type: Number,
             default: 0
+        },
+        codeErrorsString: {
+            type: String,
+            default: ''
         },
         codeErrors: [{
             id: {
