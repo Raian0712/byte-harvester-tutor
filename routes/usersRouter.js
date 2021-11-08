@@ -404,7 +404,7 @@ router.post('/submit', async (req, res) => {
                     'solutions.$.attempts': req.body.solutions.attempts,
                     'solutions.$.stepsTaken': req.body.solutions.stepsTaken,
                     'solutions.$.timeTaken': req.body.solutions.timeTaken,
-                    'solutions.$.codeErrorsStrings': req.body.solutions.codeErrorsStrings
+                    'solutions.$.codeErrorsString': req.body.solutions.codeErrorsString
                 }}, {upsert: true})
             }
             res.status(200).json({
