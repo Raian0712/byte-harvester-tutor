@@ -384,7 +384,6 @@ router.post('/getProfile', async (req, res) => {
 router.post('/submit', async (req, res) => {
     let insertIntoArray = true;
     try {
-        console.log(req.body);
         if (req.body) {
             const user = await User.student.findOne({ email: req.body.email })
             user.solutions.forEach(solution => {
@@ -405,7 +404,7 @@ router.post('/submit', async (req, res) => {
                     'solutions.$.attempts': req.body.solutions.attempts,
                     'solutions.$.stepsTaken': req.body.solutions.stepsTaken,
                     'solutions.$.timeTaken': req.body.solutions.timeTaken,
-                    'solutions.$.codeErrorsStrings': req.body.solutions.codeErrorsString
+                    'solutions.$.codeErrorsStrings': req.body.solutions.codeErrorsStrings
                 }}, {upsert: true})
             }
             res.status(200).json({
