@@ -51,6 +51,7 @@ router.post('/register', async (req, res) => {
             user.programme = req.body.programme;
             user.group = req.body.group;
             user.tutorName = req.body.tutorName;
+            user.tutorEmail = req.body.tutorEmail;
 
             await user.save();
             res.status(201).json({
