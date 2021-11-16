@@ -97,15 +97,19 @@ router.post('/registerLookup', async (req, res) => {
                 salt = req.body.name + 'byteharvesterdev' + newUser.v;
                 const hash = crypto.createHash('sha256').update(salt).digest('base64');
                 salt = hash.substr(0, 22);
-            }
 
-            res.status(200).json({
-                message: 'Register lookup complete',
-                salt: salt
-            })
+                return res.status(200).json({
+                    message: 'Register lookup complete',
+                    salt: salt
+                })
+            } else {
+                return res.status(200).json({
+                    message: 'User already exists'
+                })
+            }
         })
     } catch (err) {
-        res.status(400).json({
+        return res.status(400).json({
             message: err
         })
     }
@@ -125,13 +129,13 @@ router.post('/userLookup', async (req, res) => {
             const hash = crypto.createHash('sha256').update(salt).digest('base64');
             salt = hash.substr(0, 22);
 
-            res.status(200).json({
+            return res.status(200).json({
                 message: 'Lookup complete',
                 salt: salt
             })
         })
     } catch (err) {
-        res.status(400).json({
+        return res.status(400).json({
             message: err
         })
     }
